@@ -1,30 +1,21 @@
 import { useEffect, useState } from "react";
-import css from "./HomePage.module.css";
-import { fetchTrends } from "../../Fetch/fetch";
+import { fetchTrendingMovies } from "../../api";
 import MovieList from "../../components/MovieList/MovieList";
 
-export default function HomePage() {
-  const [trends, setTrends] = useState([]);
-  const [error, setError] = useState(false);
+function HomePage() {
+    const [movies, setMovies] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    useEffect(() => {
+        setIsLoading(true);
+        fetchTrendingMovies().then(setMovies).then(() => { setIsLoading(false) });
+    }, []);
 
-  useEffect(() => {
-    async function getTrend() {
-      try {
-        setError(false);
-        setTrends([]);
-        const data = await fetchTrends();
-        setTrends(data.data.results);
-      } catch {
-        setError(true);
-      }
-    }
-    getTrend();
-  }, []);
-
-  return (
-    <div className={css.container}>
-      <h1 className={css.page_title}>Trending today</h1>
-      {!error ? <MovieList data={trends} /> : <p>oops</p>}
-    </div>
-  );
+    return (
+        <div>
+            <h1>Trending Movies</h1>
+            <MovieList movies={movies} isLoading={isLoading} />
+        </div>
+    );
 }
+
+export default HomePage;

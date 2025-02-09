@@ -1,56 +1,38 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchActors } from "../../Fetch/fetch";
-import css from "./MovieCast.module.css";
+import { fetchMovieCast } from "../../api";
 
-export default function MovieCast() {
-  const { movieId } = useParams();
-  const [fullCast, setFullCast] = useState([]);
-  const [error, setError] = useState(false);
+function MovieCast() {
+    const { movieId } = useParams();
+    const [cast, setCast] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    async function getCast() {
-      if (movieId) {
-        try {
-          setFullCast([]);
-          setError(false);
-          const data = await fetchActors(movieId);
-          setFullCast(data.data.cast);
-        } catch (error) {
-          setError(true);
-        }
-      }
+    useEffect(() => {
+        setIsLoading(true);
+        fetchMovieCast(movieId).then(setCast).then(() => { setIsLoading(false) });
+    }, [movieId]);
+    if (isLoading) {
+        return <p>Loading...</p>;
     }
-    getCast();
-  }, [movieId]);
+    return (
 
-  const defImg =
-    "https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/no-profile-picture-icon.png";
-
-  return (
-    <div className={css.container}>
-      {!error ? (
-        <ul className={css.castList}>
-          {fullCast.map((item) => (
-            <li key={item.id} className={css.castLi}>
-              <img
-                className={css.photo}
-                src={
-                  item?.profile_path
-                    ? `https://image.tmdb.org/t/p/w200${item?.profile_path}`
-                    : defImg
-                }
-                alt={item?.name}
-                width="100"
-              />
-              <h4>{item.name}</h4>
-              <p>as: {item?.character}</p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>ooops</p>
-      )}
-    </div>
-  );
+        <div>
+            <h2>Actors</h2>
+            {cast.length > 0 ? (
+                <ul>
+                    {cast.map(actor => (
+                        <li key={actor.id}>
+                            <img src={`https://image.tmdb.org/t/p/w500${actor.profile_path}`} />
+                            <h3>{actor.name}</h3>
+                            <p>Caracter: {actor.character}</p>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                    <p>Not Actors</p>
+                )}
+        </div>
+    );
 }
+
+export default MovieCast;

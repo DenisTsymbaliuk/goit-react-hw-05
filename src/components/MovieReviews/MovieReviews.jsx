@@ -1,51 +1,32 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchReviews } from "../../Fetch/fetch";
-import css from "./MovieReviews.module.css";
+import { fetchMovieReviews } from "../../api";
 
-export default function MovieReviews() {
-  const { movieId } = useParams();
-  const [reviews, setReviews] = useState([]);
-  const [error, setError] = useState(false);
+function MovieReviews() {
+    const { movieId } = useParams();
+    const [reviews, setReviews] = useState([]);
 
-  useEffect(() => {
-    async function getReviews() {
-      if (movieId) {
-        try {
-          setReviews([]);
-          setError(false);
-          const data = await fetchReviews(movieId);
-          setReviews(data.data.results);
-        } catch (error) {
-          setError(true);
-        }
-      }
-    }
-    getReviews();
-  }, [movieId]);
+    useEffect(() => {
+        fetchMovieReviews(movieId).then(setReviews);
+    }, [movieId]);
 
-  return (
-    <>
-      {!error ? (
-        reviews.length !== 0 ? (
-          <ul className={css.list}>
-            {reviews.map((item) => (
-              <li key={item.id}>
-                <h4 className={css.name}>
-                  {item?.author_details?.name ||
-                    item?.author_details?.username ||
-                    "Author"}
-                </h4>
-                <p>{item?.content}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No reviews yet</p>
-        )
-      ) : (
-        <p>ooops</p>
-      )}
-    </>
-  );
+    return (
+        <div>
+            <h2>Review</h2>
+            {reviews.length > 0 ? (
+                <ul>
+                    {reviews.map(review => (
+                        <li key={review.id}>
+                            <h3>{review.author}</h3>
+                            <p>{review.content}</p>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                    <p>No reviews</p>
+                )}
+        </div>
+    );
 }
+
+export default MovieReviews;

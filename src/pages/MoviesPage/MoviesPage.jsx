@@ -1,61 +1,53 @@
-import { Formik, Form, Field } from "formik";
-import css from "./MoviesPage.module.css";
-import { useEffect, useState } from "react";
-import { fetchByQuery } from "../../Fetch/fetch";
+import { useState, useEffect } from "react";
+import { searchMovies } from "../../api";
 import MovieList from "../../components/MovieList/MovieList";
-import { Outlet, useSearchParams } from "react-router-dom";
+import { useSearchParams } from 'react-router-dom';
 
-export default function MoviesPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const mainParam = searchParams.get("qwery");
-  const [keyWord, setKeyWord] = useState(() => mainParam || "");
-  const [films, setFilms] = useState([]);
-  const [error, setError] = useState(false);
+function MoviesPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [query, setQuery] = useState(searchParams.get("q") || "");
+    const [movies, setMovies] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  function submitHandler(data) {
-    const searchValue = data.search.trim();
-    setKeyWord(searchValue);
-    setSearchParams({ qwery: searchValue });
-  }
+    const updateSearchParams = (key, value) => {
+        const updatedParams = new URLSearchParams(searchParams);
+        updatedParams.set(key, value);
+        setSearchParams(updatedParams);
+    };
 
-  useEffect(() => {
-    if (!keyWord) return; // Додаємо перевірку на порожнє ключове слово
+    useEffect(() => {
+        if (!query) return;
 
-    async function getInfo() {
-      try {
-        setError(false);
-        setFilms([]);
-        const data = await fetchByQuery(keyWord);
-        setFilms(data.results || []); // Додаємо перевірку на наявність results
-      } catch (error) {
-        setError(true);
-      }
-    }
-    getInfo();
-  }, [keyWord]);
+        setIsLoading(true);
+        setError(null);
 
-  const initialValues = { search: mainParam || "" };
+        searchMovies(query)
+            .then((data) => setMovies(data))
+            .catch((error) => setError(error.message))
+            .finally(() => setIsLoading(false));
+    }, [query, searchParams]);
 
-  return (
-    <>
-      <div>
-        <Formik initialValues={initialValues} onSubmit={submitHandler}>
-          <Form className={css.search}>
-            <Field
-              className={css.field}
-              name="search"
-              placeholder="Enter here..."
-              autoComplete="off"
-            ></Field>
-            <button className={css.btn} type="submit">
-              Search
-            </button>
-          </Form>
-        </Formik>
-      </div>
-      {!error && <MovieList data={films}></MovieList>}
-      {error && <p>Something went wrong. Please try again later.</p>}
-      <Outlet />
-    </>
-  );
+    const handleSearch = (e) => {
+        e.preventDefault();
+        updateSearchParams("q", query);
+    };
+
+    return (
+        <>
+            <form onSubmit={handleSearch}>
+                <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search for movies..."
+                />
+                <button type="submit">Search</button>
+            </form>
+            {isLoading && <p>Loading...</p>}
+            {error && <p>Error: {error}</p>}
+            {!isLoading && !error && <MovieList movies={movies} />}
+        </>
+    );
 }
+
+export default MoviesPage;

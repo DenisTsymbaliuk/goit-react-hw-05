@@ -1,11 +1,14 @@
-export default function NotFoundPage() {
-  return (
-    <>
-      <p>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus
-        voluptatibus quo sit? Iusto consectetur quaerat quae nulla obcaecati
-        ipsum dolorum.
-      </p>
-    </>
-  );
+import { Link } from "react-router-dom";
+import BackButton from "../../components/BackButton/BackButton";
+
+
+function NotFoundPage() {
+    return (
+        <>
+            <h1>404 - Not Found</h1>
+            <Link to="/"><BackButton /></Link>
+        </>
+    );
 }
+
+export default NotFoundPage;

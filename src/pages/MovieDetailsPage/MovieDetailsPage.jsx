@@ -1,84 +1,67 @@
-import { useEffect, useState, useRef } from "react";
-import { Outlet, useParams, useLocation, Link } from "react-router-dom";
-import { fetchById } from "../../Fetch/fetch";
-import css from "./MovieDetailsPage.module.css";
+import { useEffect, useState } from "react";
+import { useParams, Link, Outlet } from "react-router-dom";
+import { fetchMovieDetails } from "../../api";
+import BackButton from "../../components/BackButton/BackButton";
 
-export default function MoviesDetailsPage() {
-  const { movieId } = useParams();
-  const [info, setInfo] = useState(null);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(false);
+function MovieDetailsPage() {
+    const { movieId } = useParams();
+    const [movie, setMovie] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const location = useLocation();
-  const goBack = useRef(location.state?.from || "/movies");
+    useEffect(() => {
+        let isMounted = true;
+        setIsLoading(true);
+        fetchMovieDetails(movieId)
+            .then((data) => {
+                if (isMounted) {
+                    setMovie(data);
+                }
+            })
+            .catch((error) => {
+                if (isMounted) {
+                    setError(error.message);
+                }
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [movieId]);
 
-  useEffect(() => {
-    async function getInfo() {
-      if (movieId) {
-        try {
-          setLoading(true);
-          setError(false);
-          const data = await fetchById(movieId);
-          setInfo(data.data);
-        } catch (error) {
-          setError(true);
-        } finally {
-          setLoading(false);
-        }
-      }
+    if (isLoading) {
+        return <p>Loading...</p>;
     }
-    getInfo();
-  }, [movieId]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Oops, something went wrong...</p>;
-  if (!info) return null;
+    if (error) {
+        return <p>Error: {error}</p>;
+    }
 
-  const imgPath = info?.backdrop_path;
-  const imgUrl = imgPath ? `https://image.tmdb.org/t/p/w300${imgPath}` : null;
-  const popularity = info.vote_average ? (info.vote_average / 10) * 100 : 0;
-
-  return (
-    <div className={css.container}>
-      <Link className={css.backBtn} to={goBack.current}>
-        Go back
-      </Link>
-      <div className={css.info_page}>
-        {imgUrl && (
-          <img src={imgUrl} alt={info.title} className={css.info_page_img} />
-        )}
-        <div className={css.info}>
-          <h2 className={css.film_title}>{info.title}</h2>
-          <p className={css.p_score}>User Score: {popularity}%</p>
-          <h3 className={css.sub_title}>Overview</h3>
-          <p className={css.p}>{info.overview}</p>
-          <h3 className={css.sub_title}>Genres</h3>
-          <ul className={css.geners_ul}>
-            {info.genres.map((el) => (
-              <li key={el.id} className={css.geners_li}>
-                {el.name}
-              </li>
-            ))}
-          </ul>
+    return movie ? (
+        <div>
+            <BackButton />
+            <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
+            <h1>{movie.title}</h1>
+            <p>Score: {Math.round(movie.vote_average * 10)}%</p>
+            <p>{movie.overview}</p>
+            <ul>
+                {movie.genres.map((genre) => (
+                    <li key={genre.id}>{genre.name}</li>
+                ))}
+            </ul>
+            <div>
+                <Link to="cast" className="button">Check actors</Link>
+                <Link to="reviews" className="button">Check reviews</Link>
+                <Outlet />
+            </div>
         </div>
-      </div>
-      <div className={css.btns}>
-        <Link
-          to="cast"
-          className={css.backBtn}
-          state={{ from: goBack.current }}
-        >
-          Cast
-        </Link>
-        <Link
-          to="reviews"
-          className={css.backBtn}
-          state={{ from: goBack.current }}
-        >
-          Reviews
-        </Link>
-      </div>
-      <Outlet />
-    </div>
-  );
+    ) : (
+        <p>Not found</p>
+    );
 }
+
+export default MovieDetailsPage;
